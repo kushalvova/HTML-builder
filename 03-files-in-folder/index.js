@@ -4,11 +4,13 @@ const option = { withFileTypes: true };
 const path = require('path');
 const pathToFolder = path.join(__dirname, 'secret-folder');
 
-async function getResult (fileName) {
-  const pathToFile = path.join(pathToFolder, fileName);
+async function getResult (file) {
+  const fileExtname = path.extname(file);
+  const fileName = file.replace(fileExtname, '');
+  const pathToFile = path.join(pathToFolder, file);
   const fileStat = await stat(pathToFile);
   const fileSize = `${fileStat.size / 1024}kb`;
-  console.log(fileName, '-', path.extname(fileName), '-', fileSize);
+  console.log(fileName, '-', fileExtname, '-', fileSize);
 }
 
 async function getFiles(pathToFolder, option) {
