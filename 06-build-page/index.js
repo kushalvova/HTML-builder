@@ -1,69 +1,63 @@
-const path = require('path');
 const { createWriteStream } = require('fs');
 const { rm, mkdir, readFile, readdir, copyFile } = require('node:fs/promises');
-const charset = 'utf-8';
-const dirName = path.join(__dirname, 'project-dist');
-const pathToHtml = path.join(dirName, 'index.html');
-const pathToCss = path.join(dirName, 'style.css');
-const pathToStyles = path.join(__dirname, 'styles');
+const path = require('path');
+const pathToFolder = path.join(__dirname, 'project-dist');
+const pathToBundleHtml = path.join(pathToFolder, 'index.html');
 const pathToComponents = path.join(__dirname, 'components');
-const template = path.join(__dirname, 'template.html');
-const inputDir = path.join(__dirname, 'assets');
-const outputDir = path.join(dirName, 'assets');
+const pathToTemplate = path.join(__dirname, 'template.html');
+const pathToBundleCss = path.join(pathToFolder, 'style.css');
+const pathToStyles = path.join(__dirname, 'styles');
+const sourceFolder = path.join(__dirname, 'assets');
+const targetFolder = path.join(pathToFolder, 'assets');
+const charset = 'utf-8';
 
-async function getHtml() {
+async function getBundleHtml() {
   try {
-    const html = createWriteStream(pathToHtml, charset);
-    const templateContent = await readFile(template, charset);
-    let templateContentStr = templateContent.toString();
-    let regexp = /{{(.*?)}}/g;
-    let componentsArray = templateContentStr.match(regexp);
-    for (let i = 0; i < componentsArray.length; i++) {
-      let componentName = componentsArray[i].match(/{{(.*?)}}/)[1];
-      const component = path.join(pathToComponents, componentName + '.html');
-      const content = await readFile(component, charset);
-      templateContentStr = templateContentStr.replace(componentsArray[i], content.toString());
+    const bundleHtml = createWriteStream(pathToBundleHtml, charset);
+    const templateContent = await readFile(pathToTemplate, charset);
+    let bundleHtmlContent = templateContent.toString();
+    const regexp = '{{(.*?)}}';
+    const regexpLocal = new RegExp(`${regexp}`);
+    const regexpGlobal = new RegExp(`${regexp}`, 'g');
+    const componentNamesArray = bundleHtmlContent.match(regexpGlobal);
+    for (let i = 0; i < componentNamesArray.length; i++) {
+      const componentName = componentNamesArray[i].match(regexpLocal)[1];
+      const pathToComponent = path.join(pathToComponents, componentName + '.html');
+      const componentСontent = await readFile(pathToComponent, charset);
+      bundleHtmlContent = bundleHtmlContent.replace(componentNamesArray[i], componentСontent.toString());
     }
-    html.write(templateContentStr);
+    bundleHtml.write(bundleHtmlContent);
   } catch (err) {
     console.log(err);
   }
 }
 
-async function getCss() {
+async function getBundleCss() {
   try {
-    const bundle = createWriteStream(pathToCss, charset);
+    const bundleCss = createWriteStream(pathToBundleCss, charset);
     const files = await readdir(pathToStyles, { withFileTypes: true });
-    const styles = files.filter(file => path.extname(file.name) === '.css');
-    for (let file of styles) {
+    const cssFiles = files.filter(file => path.extname(file.name) === '.css');
+    for (let file of cssFiles) {
       const fileContent = await readFile(path.join(pathToStyles, file.name), charset);
-      bundle.write(fileContent + '\n');
+      bundleCss.write(fileContent + '\n');
     }
   } catch (err) {
     console.log(err);
   }
 }
 
-async function getCopyFile(src, dest) {
+async function getCopyDir(sourceFolder, targetFolder) {
   try {
-    await copyFile(src, dest);
-  } catch (err) {
-    console.log(err);
-  }
-}
-
-async function getCopyDir(inputDir, outputDir) {
-  try {
-    await rm(outputDir, { recursive: true, force: true });
-    await mkdir(outputDir, { recursive: true });
-    const filesToCopy = await readdir(inputDir, {withFileTypes: true});
-    for (let elem of filesToCopy) {
-      if (elem.isDirectory()) {
-        await mkdir(path.join(outputDir, elem.name));
-        getCopyDir(path.join(inputDir, elem.name), path.join(outputDir, elem.name));
-      };
-      if (!elem.isDirectory()) {
-        getCopyFile(path.join(inputDir, elem.name), path.join(outputDir, elem.name));
+    await rm(targetFolder, { recursive: true, force: true });
+    await mkdir(targetFolder, { recursive: true });
+    const sourceFiles = await readdir(sourceFolder, {withFileTypes: true});
+    for (let file of sourceFiles) {
+      if (file.isDirectory()) {
+        await mkdir(path.join(targetFolder, file.name));
+        getCopyDir(path.join(sourceFolder, file.name), path.join(targetFolder, file.name));
+      }
+      if (file.isFile()) {
+        await copyFile(path.join(sourceFolder, file.name), path.join(targetFolder, file.name));
       }
     }
   } catch (err) {
@@ -73,12 +67,12 @@ async function getCopyDir(inputDir, outputDir) {
 
 async function getBundle() {
   try {
-    await rm(dirName, { recursive: true, force: true });
-    await mkdir(dirName, { recursive: true });
+    await rm(pathToFolder, { recursive: true, force: true });
+    await mkdir(pathToFolder, { recursive: true });
 
-    getHtml();
-    getCss();
-    getCopyDir(inputDir, outputDir);
+    getBundleHtml();
+    getBundleCss();
+    getCopyDir(sourceFolder, targetFolder);
 
   } catch (err) {
     console.log(err);

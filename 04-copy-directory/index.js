@@ -1,20 +1,20 @@
-const path = require('path');
-const dirName = 'files';
-const inputDir = path.join(__dirname, dirName);
-const outputDir = `${inputDir}-copy`;
 const { rm, mkdir, readdir, copyFile } = require('node:fs/promises');
+const path = require('path');
+const folderName = 'files';
+const sourceFolder = path.join(__dirname, folderName);
+const targetFolder = `${sourceFolder}-copy`;
 
-async function getCopyOfDir() {
+async function getCopy() {
   try {
-    await rm(outputDir, { recursive: true, force: true });
-    await mkdir(outputDir, { recursive: true });
-    const filesToCopy = await readdir(inputDir);
-    for (let file of filesToCopy) {
-      await copyFile(path.join(inputDir, file), path.join(outputDir, file));
+    await rm(targetFolder, { recursive: true, force: true });
+    await mkdir(targetFolder, { recursive: true });
+    const files = await readdir(sourceFolder);
+    for (let file of files) {
+      await copyFile(path.join(sourceFolder, file), path.join(targetFolder, file));
     }
   } catch (err) {
     console.log(err);
   }
 }
 
-getCopyOfDir();
+getCopy();
